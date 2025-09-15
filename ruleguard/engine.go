@@ -183,9 +183,20 @@ func (state *engineState) addCachedPackage(pkgPath string, pkg *types.Package) {
 	// as these packages are reachable via pkg, so they'll
 	// not be freed by GC anyway.
 	for _, imported := range pkg.Imports() {
-		if imported.Complete() {
-			state.addCachedPackage(imported.Path(), imported)
+		if imported == nil {
+			continue
 		}
+		if !imported.Complete() {
+			continue
+		}
+
+		// Remember that pkg.Imports() does not guarantee a unique list of packages, so we can skip those
+		// that we've previously added.
+		if _, found := state.pkgCache[pkgPath]; found {
+			continue
+		}
+
+		state.addCachedPackage(imported.Path(), imported)
 	}
 }
 
